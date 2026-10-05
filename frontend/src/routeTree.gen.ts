@@ -16,6 +16,7 @@ import { Route as CommunityRouteImport } from './routes/community'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DetectionRouteImport } from './routes/detection'
 import { Route as FarmHeatmapRouteImport } from './routes/farm-heatmap'
+import { Route as FarmSetupRouteImport } from './routes/farm-setup'
 import { Route as HardwareAlertRouteImport } from './routes/hardware-alert'
 import { Route as HeatmapRouteImport } from './routes/heatmap'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -58,6 +59,11 @@ const FarmHeatmapRoute = FarmHeatmapRouteImport.update({
   path: '/farm-heatmap',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FarmSetupRoute = FarmSetupRouteImport.update({
+  id: '/farm-setup',
+  path: '/farm-setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HardwareAlertRoute = HardwareAlertRouteImport.update({
   id: '/hardware-alert',
   path: '/hardware-alert',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/detection': typeof DetectionRoute
   '/farm-heatmap': typeof FarmHeatmapRoute
+  '/farm-setup': typeof FarmSetupRoute
   '/hardware-alert': typeof HardwareAlertRoute
   '/heatmap': typeof HeatmapRoute
   '/history': typeof HistoryRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/detection': typeof DetectionRoute
   '/farm-heatmap': typeof FarmHeatmapRoute
+  '/farm-setup': typeof FarmSetupRoute
   '/hardware-alert': typeof HardwareAlertRoute
   '/heatmap': typeof HeatmapRoute
   '/history': typeof HistoryRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/detection': typeof DetectionRoute
   '/farm-heatmap': typeof FarmHeatmapRoute
+  '/farm-setup': typeof FarmSetupRoute
   '/hardware-alert': typeof HardwareAlertRoute
   '/heatmap': typeof HeatmapRoute
   '/history': typeof HistoryRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/detection'
     | '/farm-heatmap'
+    | '/farm-setup'
     | '/hardware-alert'
     | '/heatmap'
     | '/history'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/detection'
     | '/farm-heatmap'
+    | '/farm-setup'
     | '/hardware-alert'
     | '/heatmap'
     | '/history'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/detection'
     | '/farm-heatmap'
+    | '/farm-setup'
     | '/hardware-alert'
     | '/heatmap'
     | '/history'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DetectionRoute: typeof DetectionRoute
   FarmHeatmapRoute: typeof FarmHeatmapRoute
+  FarmSetupRoute: typeof FarmSetupRoute
   HardwareAlertRoute: typeof HardwareAlertRoute
   HeatmapRoute: typeof HeatmapRoute
   HistoryRoute: typeof HistoryRoute
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FarmHeatmapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/farm-setup': {
+      id: '/farm-setup'
+      path: '/farm-setup'
+      fullPath: '/farm-setup'
+      preLoaderRoute: typeof FarmSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hardware-alert': {
       id: '/hardware-alert'
       path: '/hardware-alert'
@@ -303,6 +323,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DetectionRoute: DetectionRoute,
   FarmHeatmapRoute: FarmHeatmapRoute,
+  FarmSetupRoute: FarmSetupRoute,
   HardwareAlertRoute: HardwareAlertRoute,
   HeatmapRoute: HeatmapRoute,
   HistoryRoute: HistoryRoute,

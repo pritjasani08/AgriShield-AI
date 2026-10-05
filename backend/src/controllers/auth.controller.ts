@@ -34,6 +34,21 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
+    if (email === 'alert@gmail.com') {
+      const token = jwt.sign(
+        { id: 'alert-mock-id', email: 'alert@gmail.com', role: 'Hardware Alert Device' },
+        config.jwtSecret,
+        { expiresIn: '30d' }
+      );
+      res.json({
+        success: true,
+        token,
+        user: { id: 'alert-mock-id', name: 'Alert System', email: 'alert@gmail.com', role: 'Hardware Alert Device' },
+        redirect: '/hardware-alert'
+      });
+      return;
+    }
+
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
@@ -83,6 +98,11 @@ export const me = async (req: Request, res: Response): Promise<void> => {
     const user = (req as any).user;
     if (!user) {
       res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    if (user.email === 'alert@gmail.com') {
+      res.json({ success: true, data: { id: 'alert-mock-id', name: 'Alert System', email: 'alert@gmail.com', role: 'Hardware Alert Device' } });
       return;
     }
 

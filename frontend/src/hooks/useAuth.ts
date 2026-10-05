@@ -9,7 +9,7 @@ export function useAuth() {
   const meQuery = useQuery({
     queryKey: queryKeys.auth.me,
     queryFn: async () => {
-      return { id: 1, email: 'ramesh@agrishield.in', name: 'Farmer Demo' };
+      return AuthService.me();
     },
     enabled: !!AuthStorage.getToken(),
     retry: false,
@@ -17,8 +17,7 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Mock login for hackathon demo
-      return { token: 'mock-jwt-token', user: { id: 1, email: data.email, name: 'Farmer Demo' } };
+      return AuthService.login(data);
     },
     onSuccess: (data) => {
       AuthStorage.setToken(data.token);
@@ -28,8 +27,7 @@ export function useAuth() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Mock signup for hackathon demo
-      return { token: 'mock-jwt-token', user: { id: 1, email: data.email, name: data.fullName } };
+      return AuthService.signup(data);
     },
     onSuccess: (data) => {
       AuthStorage.setToken(data.token);

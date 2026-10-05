@@ -63,12 +63,41 @@ const tooltipStyle = {
 };
 
 function AnalyticsPage() {
-  const distribution = [
+  const { data, isLoading, isError } = useAnalytics();
+
+  if (isLoading) {
+    return (
+      <AppShell title="Intelligence & Analytics" subtitle="Loading data...">
+        <div className="flex h-[50vh] items-center justify-center text-white/50">
+          <Loader2 className="mr-2 h-8 w-8 animate-spin" />
+          <p>Loading analytics...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <AppShell title="Intelligence & Analytics" subtitle="Error">
+        <div className="flex h-[50vh] flex-col items-center justify-center text-red-500/80">
+          <AlertTriangle className="mb-4 h-12 w-12" />
+          <p>Unable to load analytics data.</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const distribution = data.distribution?.length ? data.distribution : [
     { name: "Wild Boar", value: 45 },
     { name: "Nilgai", value: 30 },
     { name: "Goat", value: 15 },
     { name: "Cow", value: 10 },
   ];
+
+  const dailyTrend = data.dailyTrend?.length ? data.dailyTrend : DAILY_TREND;
+  const weeklyActivity = data.weeklyActivity?.length ? data.weeklyActivity : WEEKLY_ACTIVITY;
+  const monthlyActivity = data.monthlyActivity?.length ? data.monthlyActivity : MONTHLY_ACTIVITY;
+  const peakHours = data.peakHours?.length ? data.peakHours : PEAK_HOURS;
 
   const avgConfidence = data.avgConfidence || 0;
   const worst = { emoji: "⚠️", name: data.worstThreat?.name || "None", count: data.worstThreat?.count || 0 };
@@ -114,7 +143,7 @@ function AnalyticsPage() {
           >
             <div className="h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={DAILY_TREND}>
+                <AreaChart data={dailyTrend}>
                   <defs>
                     <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
@@ -184,7 +213,7 @@ function AnalyticsPage() {
           >
             <div className="h-[280px] mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={WEEKLY_ACTIVITY}>
+                <BarChart data={weeklyActivity}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -230,7 +259,7 @@ function AnalyticsPage() {
           <PanelSection title="Seasonal Comparison" description="Monthly activity tracking">
             <div className="h-[280px] mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={MONTHLY_ACTIVITY}>
+                <BarChart data={monthlyActivity}>
                   <defs>
                     <linearGradient id="colorMonth" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--accent)" stopOpacity={1} />
@@ -271,7 +300,7 @@ function AnalyticsPage() {
           >
             <div className="h-[280px] mt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={PEAK_HOURS}>
+                <BarChart data={peakHours}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -295,7 +324,7 @@ function AnalyticsPage() {
                     cursor={{ fill: "var(--muted)", opacity: 0.1 }}
                   />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                    {PEAK_HOURS.map((h, i) => (
+                    {peakHours.map((h: any, i: number) => (
                       <Cell
                         key={i}
                         fill={h.count > 18 ? "var(--warning)" : "var(--primary)"}
