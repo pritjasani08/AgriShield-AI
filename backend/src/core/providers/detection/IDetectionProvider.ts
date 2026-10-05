@@ -3,6 +3,7 @@ import { AnimalType, RiskLevel } from '../../enums';
 export interface ProviderDetectionRequest {
   imagePath?: string;
   imageBuffer?: Buffer;
+  mimetype?: string;
 }
 
 export interface RawBoundingBox {

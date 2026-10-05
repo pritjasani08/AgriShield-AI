@@ -4,7 +4,7 @@ import { pool } from '../../database/pool';
 import { RiskLevel } from '../../core/enums';
 
 export class SqlDetectionRepository implements IDetectionRepository {
-  async saveDetection(result: RawDetectionResult): Promise<void> {
+  async saveDetection(result: RawDetectionResult): Promise<{ id: string }> {
     const client = await pool.connect();
     
     try {
@@ -41,9 +41,25 @@ export class SqlDetectionRepository implements IDetectionRepository {
       }
       
       await client.query('COMMIT');
+      return { id: detectionId };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getHistory(limit: number, offset: number): Promise<any[]> {
+    const client = await pool.connect();
+    try {
+      const res = await client.query(`
+        SELECT id, animal_type, confidence, risk_level, created_at
+        FROM detections
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+      `, [limit, offset]);
+      return res.rows;
     } finally {
       client.release();
     }

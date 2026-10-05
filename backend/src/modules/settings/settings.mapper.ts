@@ -1,4 +1,4 @@
-import { RawSettingsEntity, SettingsDto, Theme, Language, VoiceLanguage } from './settings.types';
+import { RawSettingsEntity, SettingsDto, Theme, Language, VoiceLanguage, NotificationMode } from './settings.types';
 
 export class SettingsMapper {
   static toDto(raw: RawSettingsEntity): SettingsDto {
@@ -7,6 +7,7 @@ export class SettingsMapper {
       userId: raw.user_id,
       language: raw.language as Language,
       notificationEnabled: raw.notification_enabled,
+      notificationMode: (raw.notification_mode || (raw.notification_enabled ? 'all' : 'off')) as NotificationMode,
       voiceAlertEnabled: raw.voice_alert_enabled,
       voiceLanguage: raw.voice_language as VoiceLanguage,
       alertVolume: raw.alert_volume,

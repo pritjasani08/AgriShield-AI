@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { useAppState } from "@/lib/app-state";
+import { useAppState, profileFullName } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -155,22 +155,32 @@ export function AppShell({ title, subtitle, children, actions }: AppShellProps) 
           </div>
 
           {/* Profile Pill */}
-          <Link
-            to="/profile"
-            className="flex items-center gap-3 rounded-[1.5rem] border border-sidebar-border bg-white px-3 py-3 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
-          >
-            <span className="grid size-10 place-items-center rounded-full bg-accent text-white font-display text-sm font-bold shadow-sm">
-              {profile.fullName.slice(0, 1)}
-            </span>
-            <span className="min-w-0 leading-tight">
-              <span className="block truncate text-sm font-bold text-foreground">
-                {profile.fullName}
+          {profile ? (
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 rounded-[1.5rem] border border-sidebar-border bg-white px-3 py-3 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <span className="grid size-10 place-items-center rounded-full bg-accent text-white font-display text-sm font-bold shadow-sm">
+                {profile.firstName.slice(0, 1)}
               </span>
-              <span className="block truncate text-xs font-medium text-muted-foreground">
-                {profile.farmName}
+              <span className="min-w-0 leading-tight">
+                <span className="block truncate text-sm font-bold text-foreground">
+                  {profileFullName(profile)}
+                </span>
+                <span className="block truncate text-xs font-medium text-muted-foreground">
+                  {profile.farmName}
+                </span>
               </span>
-            </span>
-          </Link>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-3 rounded-[1.5rem] border border-sidebar-border bg-white px-3 py-3">
+              <div className="size-10 rounded-full bg-slate-100 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 bg-slate-100 rounded animate-pulse" />
+                <div className="h-2 w-2/3 bg-slate-100 rounded animate-pulse" />
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 

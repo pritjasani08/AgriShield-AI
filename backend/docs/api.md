@@ -16,8 +16,8 @@
 - `GET /api/v1/analytics/summary`: Retrieves aggregated analytics data including trends, distribution, and security score. **Requires Authentication header (`Bearer <token>`)**.
 
 ### Authentication
-- `POST /api/v1/auth/signup`: Create a new user account. Expects `email`, `password`, `firstName`, `lastName`. Returns User and JWT.
-- `POST /api/v1/auth/login`: Authenticate an existing user. Expects `email`, `password`. Returns User and JWT.
+- `POST /api/v1/auth/signup`: Create a new user account. Expects `mobile`, `password`, `firstName`, `lastName`, and optional `email`. Returns User and JWT. (Mobile-first)
+- `POST /api/v1/auth/login`: Authenticate an existing user. Expects `mobile`, `password`. Returns User and JWT.
 - `POST /api/v1/auth/logout`: Discards session.
 - `GET /api/v1/auth/me`: Retrieves current user profile. **Requires Authentication header (`Bearer <token>`)**.
 

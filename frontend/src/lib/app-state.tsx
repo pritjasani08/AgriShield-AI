@@ -7,18 +7,32 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { ProfileService } from "../services/profile.service";
+import { SettingsService } from "../services/settings.service";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthStorage } from "@/lib/AuthStorage";
 
 export type Profile = {
-  fullName: string;
-  mobile: string;
-  email: string;
-  village: string;
-  district: string;
-  state: string;
-  farmName: string;
-  farmSize: string;
-  cropType: string;
+  id?: string;
+  email?: string;
+  firstName: string;
+  lastName: string;
+  role?: string;
+  phone?: string;
+  village?: string;
+  district?: string;
+  state?: string;
+  farmName?: string;
+  farmSize?: number | null;
+  primaryCrop?: string;
+  profileImageUrl?: string;
+  createdAt?: string;
 };
+
+export function profileFullName(profile: Profile | null | undefined): string {
+  if (!profile) return "";
+  return [profile.firstName, profile.lastName].filter(Boolean).join(" ").trim();
+}
 
 export type Settings = {
   language: string;
@@ -26,18 +40,6 @@ export type Settings = {
   notifications: "all" | "high" | "off";
   volume: number;
   voiceAlerts: boolean;
-};
-
-const DEFAULT_PROFILE: Profile = {
-  fullName: "Rameshbhai Patel",
-  mobile: "+91 98250 41122",
-  email: "ramesh.patel@agrishield.in",
-  village: "Shivgadh",
-  district: "Ahmedabad",
-  state: "Gujarat",
-  farmName: "Shivgadh Green Fields",
-  farmSize: "12 acres",
-  cropType: "Cotton & Groundnut",
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -51,7 +53,7 @@ const DEFAULT_SETTINGS: Settings = {
 type AppState = {
   ready: boolean;
   authed: boolean;
-  profile: Profile;
+  profile: Profile | null;
   settings: Settings;
   systemOn: boolean;
   offSince: number | null;
@@ -66,8 +68,8 @@ const Ctx = createContext<AppState | null>(null);
 const KEY = "agrishield-state-v1";
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [authed, setAuthed] = useState(false);
-  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
+  const { isAuthed } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [systemOn, setSystem] = useState(true);
   const [offSince, setOffSince] = useState<number | null>(null);
@@ -78,8 +80,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const raw = window.localStorage.getItem(KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      if (parsed.authed) setAuthed(true);
-      if (parsed.profile) setProfile({ ...DEFAULT_PROFILE, ...parsed.profile });
+      if (parsed.profile) setProfile(parsed.profile);
       if (parsed.settings) setSettings({ ...DEFAULT_SETTINGS, ...parsed.settings });
       if (typeof parsed.systemOn === "boolean") setSystem(parsed.systemOn);
       if (parsed.offSince) setOffSince(parsed.offSince);
@@ -95,12 +96,30 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(
         KEY,
-        JSON.stringify({ authed, profile, settings, systemOn, offSince }),
+        JSON.stringify({ profile, settings, systemOn, offSince }),
       );
     } catch {
       /* ignore */
     }
-  }, [ready, authed, profile, settings, systemOn, offSince]);
+  }, [ready, profile, settings, systemOn, offSince]);
+
+  useEffect(() => {
+    if (ready && !AuthStorage.getToken()) {
+      setProfile(null);
+      setSettings(DEFAULT_SETTINGS);
+    }
+  }, [ready]);
+
+  useEffect(() => {
+    if (ready && isAuthed) {
+      ProfileService.getProfile().then(p => {
+        if (p) setProfile((prev) => ({ ...prev, ...p } as Profile));
+      }).catch(() => {});
+      SettingsService.getSettings().then(s => {
+        if (s) setSettings((prev) => ({ ...prev, ...s }));
+      }).catch(() => {});
+    }
+  }, [ready, isAuthed]);
 
   const setSystemOn = useCallback((on: boolean) => {
     setSystem(on);
@@ -110,21 +129,29 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppState>(
     () => ({
       ready,
-      authed,
+      authed: isAuthed,
       profile,
       settings,
       systemOn,
       offSince,
       login: (p) => {
-        setAuthed(true);
-        if (p) setProfile((prev) => ({ ...prev, ...p }));
+        if (p) setProfile((prev) => ({ ...prev, ...p } as Profile));
       },
-      logout: () => setAuthed(false),
-      updateProfile: (p) => setProfile((prev) => ({ ...prev, ...p })),
-      updateSettings: (s) => setSettings((prev) => ({ ...prev, ...s })),
+      logout: () => {
+        setProfile(null);
+        setSettings(DEFAULT_SETTINGS);
+      },
+      updateProfile: (p) => {
+        setProfile((prev) => ({ ...prev, ...p } as Profile));
+        ProfileService.updateProfile(p).catch(() => {});
+      },
+      updateSettings: (s) => {
+        setSettings((prev) => ({ ...prev, ...s }));
+        SettingsService.updateSettings(s).catch(() => {});
+      },
       setSystemOn,
     }),
-    [ready, authed, profile, settings, systemOn, offSince, setSystemOn],
+    [ready, isAuthed, profile, settings, systemOn, offSince, setSystemOn],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

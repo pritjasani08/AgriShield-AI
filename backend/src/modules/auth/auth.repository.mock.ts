@@ -10,6 +10,7 @@ export class MockAuthRepository implements IAuthRepository {
       email: 'demo@agrishield.in',
       firstName: 'Demo',
       lastName: 'Farmer',
+      phone: '9825041122',
       passwordHash: '$2b$10$04IwDMkRrOe24rF8wU8.yez9FpyT4HzDn4vjpGs6rO.DqfAJSBO9S', // demo1234
       role: 'admin',
       createdAt: new Date(),
@@ -18,6 +19,11 @@ export class MockAuthRepository implements IAuthRepository {
 
   async findUserByEmail(email: string): Promise<(User & { passwordHash: string }) | null> {
     const user = this.users.find((u) => u.email === email);
+    return user || null;
+  }
+
+  async findUserByPhone(phone: string): Promise<(User & { passwordHash: string }) | null> {
+    const user = this.users.find((u) => u.phone === phone);
     return user || null;
   }
 
@@ -31,6 +37,7 @@ export class MockAuthRepository implements IAuthRepository {
   async createUser(dto: SignupDto & { passwordHash: string }): Promise<User> {
     const newUser = {
       id: crypto.randomUUID(),
+      phone: dto.mobile,
       email: dto.email,
       firstName: dto.firstName,
       lastName: dto.lastName,

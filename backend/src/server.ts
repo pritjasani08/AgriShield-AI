@@ -4,6 +4,7 @@ import { checkConnection } from './database';
 import { logger } from './core/utils/logger';
 
 
+
 const startServer = async () => {
   try {
     // Verify Database Connection before starting

@@ -6,10 +6,11 @@ import { createDetectionRoutes } from './detection.routes';
 import { DummyDetectionProvider } from '../../core/providers/detection';
 import { env } from '../../config/env';
 
-// Module Dependency Injection
-const detectionProvider = new DummyDetectionProvider();
+import { FastApiDetectionProvider } from '../../core/providers/detection/FastApiDetectionProvider';
+import { IDetectionProvider, ProviderDetectionRequest, RawDetectionResult } from '../../core/providers/detection/IDetectionProvider';
 
 const useMock = env.DATABASE_PROVIDER === 'mock';
+const detectionProvider = useMock ? new DummyDetectionProvider() : new FastApiDetectionProvider();
 const detectionRepository = useMock ? new MockDetectionRepository() : new SqlDetectionRepository();
 
 const detectionService = new DetectionService(detectionProvider, detectionRepository);

@@ -80,6 +80,7 @@ type Result = {
   cameraId: string;
   weather: string;
   speciesType: string;
+  recommendations: { action: string; priority: string }[];
 };
 
 const SIDES = ["North Fence", "East Gate", "South Canal", "West Boundary"];
@@ -183,6 +184,7 @@ function DetectionPage() {
             cameraId: detection.cameraId || "CAM-01",
             weather: detection.weather || "Clear / 24°C",
             speciesType: detection.speciesType || "Mammal",
+            recommendations: detection.recommendations || []
           });
 
           if (systemOn) {
@@ -197,36 +199,11 @@ function DetectionPage() {
           });
         }
       }
-      
-      const now = new Date();
-      setResult({
-        animal: data.animal,
-        confidence: data.confidence,
-        side: SIDES[Math.floor(Math.random() * SIDES.length)]!,
-        time: now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-        box: { x: -100, y: -100, w: 0, h: 0 }, // Hide the CSS box since Python draws it
-        media: kind === "video" ? data.video_url : data.image_base64,
-        kind,
-        distance: Math.round(5 + Math.random() * 25),
-        direction: Math.random() > 0.5 ? "Inbound" : "Parallel",
-        speed: Number((1 + Math.random() * 5).toFixed(1)),
-        threatLevel: "High",
-        cameraId: "CAM-0" + Math.ceil(Math.random() * 8),
-        weather: "Clear / 24°C",
-        speciesType: "Mammal"
-      });
-      
-      setRunning(false);
-      if (systemOn) {
-        toast.error(`${data.animal} detected`, {
-          description: `${data.confidence}% confidence`,
-          icon: <BellRing className="size-5" />,
-        });
-      }
-    } catch(err) {
-      toast.error("Failed to connect to AI server. Please make sure uvicorn is running.");
-      setRunning(false);
-    }
+    });
+
+    return () => {
+      window.clearInterval(timer);
+    };
   };
 
   const handleAction = (id: string) => {
@@ -562,18 +539,27 @@ function DetectionPage() {
                     {/* AI Recommendation */}
                     <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-transparent p-5 shadow-sm">
                       <h5 className="flex items-center text-xs font-bold text-primary mb-2">
-                        <Focus className="mr-2 size-4" /> AI Recommendation
+                        <Focus className="mr-2 size-4" /> AI Recommendations
                       </h5>
-                      <p className="text-sm font-medium text-foreground leading-relaxed">
-                        {result.animal} movement detected. Activate {result.side} Siren to deter
-                        intrusion.
-                      </p>
+                      <ul className="text-sm font-medium text-foreground leading-relaxed list-disc list-inside space-y-1">
+                        {result.recommendations && result.recommendations.length > 0 ? (
+                          result.recommendations.map((rec, idx) => (
+                            <li key={idx}>
+                              {rec.action} <span className="text-[10px] uppercase text-muted-foreground ml-2 tracking-wider">[{rec.priority}]</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li>{result.animal} movement detected. Activate {result.side} Siren to deter intrusion.</li>
+                        )}
+                      </ul>
                       <div className="flex gap-6 mt-4 pt-4 border-t border-primary/10">
                         <div>
                           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Priority
+                            Primary Priority
                           </p>
-                          <p className="text-xs font-bold text-destructive">Critical</p>
+                          <p className="text-xs font-bold text-destructive">
+                            {result.recommendations && result.recommendations.length > 0 ? result.recommendations[0]?.priority : "Critical"}
+                          </p>
                         </div>
                         <div>
                           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">

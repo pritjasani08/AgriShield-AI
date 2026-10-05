@@ -58,9 +58,9 @@ function Dashboard() {
   const { systemOn, profile } = useAppState();
   const { data, isLoading } = useDashboard();
 
-  if (isLoading || !data) {
+  if (isLoading || !data || !profile) {
     return (
-      <AppShell title={`${profile.farmName}`} subtitle="Loading dashboard...">
+      <AppShell title={profile?.farmName || "Dashboard"} subtitle="Loading dashboard...">
         <div className="grid min-h-[60vh] place-items-center">
           <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
@@ -75,14 +75,7 @@ function Dashboard() {
   const DAILY_TREND = data.dailyTrend;
   const WEEKLY_ACTIVITY = data.weeklyActivity;
   const MONTHLY_ACTIVITY = data.monthlyActivity;
-  const RECENT_ALERTS = data.recentAlerts;
-  // Fallback for UI preservation if peakHours isn't fully mocked yet
-  const PEAK_HOURS = [
-    { hour: "04", count: 6 },
-    { hour: "06", count: 11 },
-    { hour: "18", count: 17 },
-    { hour: "20", count: 26 },
-  ];
+  const RECENT_ALERTS = data.recentAlerts || [];
 
   const latestAlert = RECENT_ALERTS?.[0];
   const statusBg = systemOn ? "bg-primary/15" : "bg-destructive/15";
@@ -99,7 +92,7 @@ function Dashboard() {
 
   return (
     <AppShell
-      title={`Good Evening, ${profile.fullName.split(" ")[0]}`}
+      title={`Good Evening, ${profile.firstName || "Farmer"}`}
       subtitle={new Date().toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
@@ -274,11 +267,8 @@ function Dashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-                        A{" "}
-                        <strong className="text-foreground font-bold">{latestAlert.animal}</strong>{" "}
-                        was safely deterred near the{" "}
                         <strong className="text-foreground font-bold">
-                          {latestAlert.side} fence
+                          {latestAlert.description}
                         </strong>{" "}
                         at {latestAlert.time}.
                       </p>
@@ -382,7 +372,7 @@ function Dashboard() {
                 <div>
                   <h3 className="font-semibold text-sm">Recent Activity</h3>
                   <p className="text-sm mt-1 text-muted-foreground leading-relaxed">
-                    {latestAlert.description} ({latestAlert.time})
+                    {latestAlert?.description} ({latestAlert?.time})
                   </p>
                   <div className="mt-3 flex items-center gap-3">
                     <Button variant="outline" size="sm" className="h-8 text-xs rounded-full">

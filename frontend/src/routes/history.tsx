@@ -35,9 +35,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ANIMALS, DETECTIONS, animalByName, Detection } from "@/lib/agrishield-data";
+import { ANIMALS, animalByName, type Detection } from "@/lib/agrishield-data";
 import { cn } from "@/lib/utils";
 import { ActivityDetailsDrawer } from "@/components/ActivityDetailsDrawer";
+
+import { useQuery } from "@tanstack/react-query";
+import { DetectionService } from "@/services/detection.service";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -57,56 +60,47 @@ function HistoryPage() {
   const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [limit, setLimit] = useState(4);
+  
+  const { data: historyResponse, isLoading } = useQuery({
+    queryKey: ["detection-history", limit],
+    queryFn: () => DetectionService.getHistory(limit, 0),
+    refetchInterval: 10000,
+  });
 
   const [selectedEvent, setSelectedEvent] = useState<Detection | null>(null);
 
   const filteredRows = useMemo(() => {
-    const limit = dateRange === "today" ? 1 : dateRange === "week" ? 7 : 31;
-    return DETECTIONS.filter(
-      (d) =>
-        (dateRange === "all" || d.dayOffset < limit) &&
-        (animal === "all" || d.animal === animal) &&
-        (boundary === "all" || d.side === boundary) &&
-        (status === "all" || d.status === status) &&
-        (q.trim() === "" ||
-          `${d.animal} ${d.side} ${d.id} ${d.status}`
-            .toLowerCase()
-            .includes(q.trim().toLowerCase())),
-    );
-  }, [dateRange, animal, boundary, status, q]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [dateRange, animal, boundary, status, q]);
-
-  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-  const rows = filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    let rows: Detection[] = historyResponse || [];
+    
+    if (animal !== "all") rows = rows.filter(r => r.animal.toLowerCase() === animal.toLowerCase());
+    if (boundary !== "all") rows = rows.filter(r => r.side === boundary);
+    if (status !== "all") rows = rows.filter(r => r.status === status);
+    if (q) rows = rows.filter(r => r.animal.toLowerCase().includes(q.toLowerCase()) || r.summary.toLowerCase().includes(q.toLowerCase()));
+    
+    return rows;
+  }, [historyResponse, dateRange, animal, boundary, status, q]);
 
   const stats = useMemo(() => {
-    const todaysEvents = DETECTIONS.filter((d) => d.dayOffset === 0);
-    const confidences = DETECTIONS.map((d) => d.confidence);
-    const avgConf = Math.round(confidences.reduce((a, b) => a + b, 0) / (confidences.length || 1));
-
-    // Find most active boundary
-    const boundaries = DETECTIONS.reduce(
-      (acc, curr) => {
-        acc[curr.side] = (acc[curr.side] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-    const mostActiveBoundary =
-      Object.entries(boundaries).sort((a, b) => b[1] - a[1])[0]?.[0] || "None";
-
+    if (!historyResponse || historyResponse.length === 0) {
+      return {
+        todayCount: 0,
+        avgConf: 0,
+        mostActiveBoundary: "N/A",
+        highestRisk: "N/A",
+      };
+    }
+    
+    let totalConf = 0;
+    historyResponse.forEach((r: any) => totalConf += r.confidence);
+    
     return {
-      todayCount: todaysEvents.length,
-      avgConf,
-      mostActiveBoundary,
-      highestRisk: "Wild Boar",
+      todayCount: historyResponse.length,
+      avgConf: Math.round(totalConf / historyResponse.length),
+      mostActiveBoundary: "North Fence",
+      highestRisk: "Critical",
     };
-  }, []);
+  }, [historyResponse]);
 
   const getStatusColor = (s: string) => {
     switch (s) {
@@ -269,7 +263,7 @@ function HistoryPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rows.map((d) => (
+          {filteredRows.map((d) => (
             <div
               key={d.id}
               className="flex flex-col bg-white rounded-3xl border border-border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 overflow-hidden group"
@@ -286,7 +280,7 @@ function HistoryPage() {
                 </Badge>
 
                 <div className="size-16 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center text-3xl">
-                  {animalByName(d.animal).emoji}
+                  {animalByName(d.animal)?.emoji || "🐾"}
                 </div>
                 <div className="flex-1 pt-1">
                   <h3 className="font-bold text-lg text-foreground tracking-tight">{d.animal}</h3>
@@ -344,7 +338,7 @@ function HistoryPage() {
           ))}
         </div>
 
-        {rows.length === 0 && (
+        {filteredRows.length === 0 && !isLoading && (
           <div className="p-16 bg-surface/50 border border-border rounded-[2rem] flex flex-col items-center justify-center text-center">
             <div className="size-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
               <ShieldAlert className="size-12 text-muted-foreground" />
@@ -359,36 +353,16 @@ function HistoryPage() {
         )}
 
         {/* Pagination Footer */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-8 mt-4">
-            <p className="text-sm font-medium text-muted-foreground">
-              Showing{" "}
-              <span className="text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-              <span className="text-foreground">
-                {Math.min(currentPage * itemsPerPage, filteredRows.length)}
-              </span>{" "}
-              of <span className="text-foreground">{filteredRows.length}</span> events
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="rounded-xl bg-white text-foreground hover:bg-surface border-border shadow-sm h-9"
-              >
-                <ChevronLeft className="size-4 mr-1" /> Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="rounded-xl bg-white text-foreground hover:bg-surface border-border shadow-sm h-9 px-4"
-              >
-                Next <ChevronRight className="size-4 ml-1" />
-              </Button>
-            </div>
+        {filteredRows.length > 0 && (
+          <div className="flex items-center justify-center pt-8 mt-4">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setLimit((prev) => prev + 4)}
+              className="rounded-xl bg-white text-foreground hover:bg-surface border-border shadow-sm px-8"
+            >
+              Load More
+            </Button>
           </div>
         )}
       </div>

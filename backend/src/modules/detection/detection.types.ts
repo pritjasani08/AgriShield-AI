@@ -17,3 +17,16 @@ export interface DetectionResultDto {
   risk: string;
   recommendations: RecommendationDto[];
 }
+
+export interface DetectionHistoryDto {
+  id: string;
+  animal: string;
+  confidence: number;
+  date: string;
+  time: string;
+  side: string;
+  summary: string;
+  actions: string[];
+  status: string;
+  risk: string;
+}

@@ -18,11 +18,12 @@ export interface DetectionResult {
 
 export interface User {
   id: string;
-  email: string;
+  email?: string;
   firstName: string;
   lastName: string;
   role: string;
   createdAt: Date;
+  phone?: string;
 }
 
 export interface Settings {

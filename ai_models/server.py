@@ -15,8 +15,8 @@ from video_predict import process_video
 app = FastAPI()
 
 # Mount temp directory to serve processed videos
-import os
-temp_dir = r"E:\TETRA043\ai_models\temp"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+temp_dir = os.path.join(BASE_DIR, "temp")
 os.makedirs(temp_dir, exist_ok=True)
 app.mount("/videos", StaticFiles(directory=temp_dir), name="videos")
 
@@ -30,7 +30,8 @@ app.add_middleware(
 )
 
 print("Loading model... please wait.")
-model = YOLO(r"E:\TETRA043\ai_models\models\best.pt")
+model_path = os.path.join(BASE_DIR, "models", "best.pt")
+model = YOLO(model_path)
 print("Model loaded successfully!")
 
 @app.post("/predict")
@@ -60,17 +61,27 @@ async def predict(image: UploadFile = File(...)):
     _, buffer = cv2.imencode('.jpg', annotated_img)
     img_base64 = base64.b64encode(buffer).decode('utf-8')
     
+    # Calculate bounding box (top-left x, y, width, height)
+    x1, y1, x2, y2 = top_box.xyxy[0].tolist()
+    bbox = {
+        "x": int(x1),
+        "y": int(y1),
+        "width": int(x2 - x1),
+        "height": int(y2 - y1)
+    }
+    
     return {
         "detected": True,
         "animal": animal_name.title(),
         "confidence": round(confidence * 100),
+        "bbox": bbox,
         "image_base64": f"data:image/jpeg;base64,{img_base64}"
     }
 
 @app.post("/predict_video")
 async def predict_video(video: UploadFile = File(...)):
     # Create temp directory if not exists
-    temp_dir = r"E:\TETRA043\ai_models\temp"
+    temp_dir = os.path.join(BASE_DIR, "temp")
     os.makedirs(temp_dir, exist_ok=True)
     
     # Save uploaded video

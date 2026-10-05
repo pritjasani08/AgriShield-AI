@@ -17,8 +17,9 @@ import { AppShell } from "@/components/AppShell";
 import { AuthGuard, PanelSection, RiskPill, StatCard } from "@/components/shield-ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { COMMUNITY_FEED, animalByName } from "@/lib/agrishield-data";
+import { animalByName } from "@/lib/agrishield-data";
 import { useAppState } from "@/lib/app-state";
+import { useCommunity } from "@/hooks/useCommunity";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/community")({
@@ -34,7 +35,20 @@ export const Route = createFileRoute("/community")({
 
 function CommunityPage() {
   const { profile } = useAppState();
-  const nearby = COMMUNITY_FEED.filter((p) => p.severity !== "low");
+  const { data: communityFeed, isLoading } = useCommunity();
+
+  if (isLoading || !communityFeed || !profile) {
+    return (
+      <AppShell title="Village Safety Network" subtitle={`Loading community feed...`}>
+        <div className="flex h-[400px] items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Filter nearby (in the mock, just use the feed itself or a subset)
+  const nearby = communityFeed.filter((p: any) => p.severity !== "low").slice(0, 3);
 
   return (
     <AppShell
@@ -94,8 +108,8 @@ function CommunityPage() {
             className="p-4 sm:p-6 bg-transparent border-none shadow-none"
           >
             <ul className="space-y-4">
-              {COMMUNITY_FEED.map((p) => {
-                const a = animalByName(p.animal);
+              {communityFeed.map((p: any) => {
+                const a = animalByName(p.animal || 'Wild Boar');
                 return (
                   <li
                     key={p.id}
@@ -112,26 +126,26 @@ function CommunityPage() {
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-display text-lg font-bold text-foreground truncate">
-                                {p.farmer}
+                                {p.farmer || p.userName}
                               </span>
                               <RiskPill level={p.severity} />
                             </div>
                             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                              <MapPin className="size-3" /> {p.farm} · {p.village}
+                              <MapPin className="size-3" /> {p.farm || "Farm"} · {p.village || "Village"}
                             </span>
                           </div>
                           <span className="text-sm font-bold text-muted-foreground bg-surface px-3 py-1 rounded-full">
-                            {p.time}
+                            {p.time || new Date(p.createdAt || Date.now()).toLocaleTimeString()}
                           </span>
                         </div>
 
                         <div className="mt-4 p-4 bg-surface/50 rounded-2xl border border-border border-dashed flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div>
                             <span className="font-bold text-foreground block mb-1 text-base">
-                              {p.animal} Detected
+                              {p.animal || p.animalType || "Unknown"} Detected
                             </span>
                             <span className="text-muted-foreground text-sm font-medium">
-                              Moving {p.direction.toLowerCase()} · {p.distance} away
+                              Moving {p.direction?.toLowerCase() || "unknown direction"} · {p.distance} away
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
@@ -140,14 +154,14 @@ function CommunityPage() {
                               className="gap-1.5 rounded-full px-3 py-1 bg-white"
                             >
                               <ArrowDownRight className="size-3.5 text-primary" />
-                              {p.notified} Notified
+                              {p.notified || p.likesCount || 0} Notified
                             </Badge>
                             <Badge
                               variant="secondary"
                               className="gap-1.5 rounded-full px-3 py-1 bg-white"
                             >
                               <Timer className="size-3.5 text-warning" />
-                              ETA {p.eta}
+                              ETA {p.eta || "N/A"}
                             </Badge>
                           </div>
                         </div>
@@ -159,7 +173,7 @@ function CommunityPage() {
                             className="rounded-xl font-bold hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
                             onClick={() =>
                               toast.success("Acknowledged", {
-                                description: `${p.farmer} notified that you are on alert.`,
+                                description: `${p.farmer || p.userName} notified that you are on alert.`,
                               })
                             }
                           >
@@ -182,7 +196,7 @@ function CommunityPage() {
               className="p-6 md:p-8"
             >
               <ul className="space-y-4 mt-2">
-                {nearby.map((p) => (
+                {nearby.map((p: any) => (
                   <li
                     key={p.id}
                     className="rounded-[1.5rem] border border-destructive/20 bg-destructive/5 p-5 relative overflow-hidden"
@@ -191,7 +205,7 @@ function CommunityPage() {
 
                     <div className="flex justify-between items-start mb-3 relative z-10">
                       <p className="flex items-center gap-2 font-display text-xl font-bold text-foreground tracking-tight">
-                        {animalByName(p.animal).emoji} {p.animal}
+                        {animalByName(p.animal || p.animalType || 'Wild Boar').emoji} {p.animal || p.animalType || 'Wild Boar'}
                       </p>
                       <RiskPill level={p.severity} />
                     </div>
@@ -200,7 +214,7 @@ function CommunityPage() {
                         <MapPin className="size-3.5" /> {p.distance}
                       </span>
                       <span className="flex items-center gap-1.5 bg-white/60 px-2.5 py-1 rounded-lg border border-border/50">
-                        <Timer className="size-3.5" /> {p.eta}
+                        <Timer className="size-3.5" /> {p.eta || "N/A"}
                       </span>
                     </div>
 
@@ -209,7 +223,7 @@ function CommunityPage() {
                       className="w-full rounded-xl font-bold shadow-md hover:-translate-y-0.5 transition-transform relative z-10"
                       onClick={() =>
                         toast.success("Deterrents Armed", {
-                          description: `${animalByName(p.animal).deterrents.join(" + ")} ready on the ${p.direction.toLowerCase()} line.`,
+                          description: `${animalByName(p.animal || p.animalType || 'Wild Boar').deterrents.join(" + ")} ready on the ${p.direction?.toLowerCase() || p.side?.toLowerCase() || 'perimeter'} line.`,
                         })
                       }
                     >

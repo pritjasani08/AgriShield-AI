@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useAppState, type Profile } from "@/lib/app-state";
-import { COMMUNITY_FEED, RECENT_ALERTS } from "@/lib/agrishield-data";
+import { useAuth } from "@/hooks/useAuth";
+import { useAppState, profileFullName, type Profile } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
@@ -33,24 +33,37 @@ export const Route = createFileRoute("/profile")({
   ),
 });
 
-const FIELDS: Array<[keyof Profile, string]> = [
-  ["fullName", "Full Name"],
-  ["mobile", "Mobile Number"],
-  ["email", "Email Address"],
-  ["village", "Village Name"],
-  ["district", "District"],
-  ["state", "State"],
-  ["farmName", "Farm Name"],
-  ["farmSize", "Farm Size (Acres)"],
-  ["cropType", "Primary Crop"],
+const FIELDS: Array<{ key: keyof Profile; label: string; type?: string }> = [
+  { key: "firstName", label: "First Name" },
+  { key: "lastName", label: "Last Name" },
+  { key: "phone", label: "Mobile Number" },
+  { key: "village", label: "Village Name" },
+  { key: "district", label: "District" },
+  { key: "state", label: "State" },
+  { key: "farmName", label: "Farm Name" },
+  { key: "farmSize", label: "Farm Size (Acres)", type: "number" },
+  { key: "primaryCrop", label: "Primary Crop" },
 ];
 
 function ProfilePage() {
-  const { profile, updateProfile, logout, systemOn, setSystemOn, settings, updateSettings } =
+  const { profile, updateProfile, systemOn, setSystemOn, settings, updateSettings, logout: appLogout } =
     useAppState();
+  const { logout: authLogout } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(profile);
+  const [draft, setDraft] = useState<Profile | null>(null);
   const navigate = useNavigate();
+
+  if (!profile) {
+    return (
+      <AppShell title="Profile" subtitle="Loading profile...">
+        <div className="flex h-[400px] items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const activeDraft = draft || profile;
 
   return (
     <AppShell
@@ -65,11 +78,11 @@ function ProfilePage() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none opacity-50" />
               <div className="relative flex flex-col md:flex-row md:items-center gap-6">
                 <span className="grid size-24 shrink-0 place-items-center rounded-3xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 font-display text-4xl font-bold tracking-tight">
-                  {profile.fullName.slice(0, 1)}
+                  {profile.firstName.slice(0, 1)}
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="font-display text-3xl font-bold text-foreground mb-1">
-                    {profile.fullName}
+                    {profileFullName(profile)}
                   </h2>
                   <p className="text-base font-medium text-muted-foreground flex items-center gap-1.5 mb-4">
                     <MapPin className="size-4" /> {profile.village}, {profile.district},{" "}
@@ -80,10 +93,10 @@ function ProfilePage() {
                       <Sprout className="size-4 text-primary" /> {profile.farmName}
                     </span>
                     <span className="flex items-center gap-1.5 text-xs font-bold bg-surface px-3 py-1.5 rounded-lg border border-border text-foreground">
-                      <Wheat className="size-4 text-warning" /> {profile.cropType}
+                      <Wheat className="size-4 text-warning" /> {profile.primaryCrop}
                     </span>
                     <span className="flex items-center gap-1.5 text-xs font-bold bg-surface px-3 py-1.5 rounded-lg border border-border text-foreground">
-                      <Phone className="size-4 text-primary" /> {profile.mobile}
+                      <Phone className="size-4 text-primary" /> {profile.phone}
                     </span>
                   </div>
                 </div>
@@ -102,8 +115,13 @@ function ProfilePage() {
                   <Button
                     variant="outline"
                     className="rounded-xl font-bold text-destructive hover:bg-destructive/10 border-border"
-                    onClick={() => {
-                      logout();
+                    onClick={async () => {
+                      try {
+                        await authLogout();
+                      } catch {
+                        /* token already cleared client-side */
+                      }
+                      appLogout();
                       toast.success("Logged out");
                       navigate({ to: "/auth" });
                     }}
@@ -126,14 +144,14 @@ function ProfilePage() {
                   className="grid gap-5 sm:grid-cols-2 mt-4"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    updateProfile(draft);
+                    if (activeDraft) updateProfile(activeDraft);
                     setEditing(false);
                     toast.success("Profile Updated", {
                       icon: <CheckCircle2 className="size-5 text-primary" />,
                     });
                   }}
                 >
-                  {FIELDS.map(([key, label]) => (
+                  {FIELDS.map(({ key, label, type }) => (
                     <div key={key} className="space-y-2">
                       <Label
                         htmlFor={key}
@@ -143,8 +161,19 @@ function ProfilePage() {
                       </Label>
                       <Input
                         id={key}
-                        value={draft[key]}
-                        onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
+                        type={type}
+                        value={activeDraft[key] ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (key === "farmSize") {
+                            setDraft((d) => ({
+                              ...(d || profile),
+                              farmSize: raw === "" ? null : Number(raw),
+                            } as Profile));
+                          } else {
+                            setDraft((d) => ({ ...(d || profile), [key]: raw } as Profile));
+                          }
+                        }}
                         className="h-12 rounded-xl bg-surface border-border shadow-sm px-4 font-medium focus-visible:ring-primary/20"
                       />
                     </div>
@@ -161,7 +190,7 @@ function ProfilePage() {
                 </form>
               ) : (
                 <dl className="grid gap-4 sm:grid-cols-2 mt-4">
-                  {FIELDS.map(([key, label]) => (
+                  {FIELDS.map(({ key, label }) => (
                     <div
                       key={key}
                       className="rounded-2xl border border-border/60 bg-surface/40 p-4 transition-colors hover:bg-surface/80"
@@ -169,7 +198,9 @@ function ProfilePage() {
                       <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
                         {label}
                       </dt>
-                      <dd className="text-base font-bold text-foreground">{profile[key]}</dd>
+                      <dd className="text-base font-bold text-foreground">
+                        {key === "farmSize" && !profile[key] ? "—" : profile[key]}
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -235,24 +266,7 @@ function ProfilePage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
                     Recent Detections
                   </p>
-                  <ul className="space-y-3">
-                    {RECENT_ALERTS.slice(0, 3).map((a) => (
-                      <li
-                        key={a.id}
-                        className="flex flex-col bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm"
-                      >
-                        <span className="font-bold text-sm text-slate-800">{a.animal}</span>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-[11px] font-medium text-slate-500">
-                            {a.side} · {a.time}
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                            {a.confidence}%
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-xs text-slate-500 text-center py-2">No recent alerts</p>
                 </div>
 
                 {/* Mobile Community */}
@@ -260,19 +274,7 @@ function ProfilePage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">
                     Village Network
                   </p>
-                  <ul className="space-y-3">
-                    {COMMUNITY_FEED.slice(0, 2).map((c) => (
-                      <li
-                        key={c.id}
-                        className="flex justify-between items-center text-xs bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm"
-                      >
-                        <span className="font-bold text-slate-800">{c.farm}</span>
-                        <span className="font-medium text-slate-500 flex items-center gap-1">
-                          {c.animal} · <span className="text-orange-500">{c.distance}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-xs text-slate-500 text-center py-2">No network alerts</p>
                 </div>
               </div>
             </div>

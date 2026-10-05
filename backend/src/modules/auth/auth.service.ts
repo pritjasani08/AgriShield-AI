@@ -19,9 +19,15 @@ export class AuthService extends BaseService {
   }
 
   async signup(dto: SignupDto): Promise<AuthResponseDto> {
-    const existingUser = await this.authRepository.findUserByEmail(dto.email);
+    const existingUser = await this.authRepository.findUserByPhone(dto.mobile);
     if (existingUser) {
-      throw new ApiError(HTTP_STATUS.BAD_REQUEST, 'Email is already registered');
+      throw new ApiError(HTTP_STATUS.CONFLICT, 'Mobile number is already registered');
+    }
+    if (dto.email) {
+      const existingEmail = await this.authRepository.findUserByEmail(dto.email);
+      if (existingEmail) {
+        throw new ApiError(HTTP_STATUS.CONFLICT, 'Email is already registered');
+      }
     }
 
     const passwordHash = await this.passwordService.hash(dto.password);
@@ -29,7 +35,7 @@ export class AuthService extends BaseService {
     const rawUser = await this.authRepository.createUser({ ...dto, passwordHash });
     
     const user = AuthMapper.toAuthResponse(rawUser);
-    const token = this.jwtService.sign({ id: user.id, email: user.email });
+    const token = this.jwtService.sign({ id: user.id, email: user.email || user.phone || '' });
     
     DomainEvents.emitEvent(EventTypes.USER_REGISTERED, { userId: user.id, email: user.email });
     
@@ -37,7 +43,10 @@ export class AuthService extends BaseService {
   }
 
   async login(dto: LoginDto): Promise<AuthResponseDto> {
-    const rawUser = await this.authRepository.findUserByEmail(dto.email);
+    const rawUser = dto.mobile
+      ? await this.authRepository.findUserByPhone(dto.mobile)
+      : await this.authRepository.findUserByEmail(dto.email!);
+
     if (!rawUser) {
       throw new ApiError(HTTP_STATUS.UNAUTHORIZED, 'Invalid email or password');
     }
@@ -48,7 +57,7 @@ export class AuthService extends BaseService {
     }
 
     const user = AuthMapper.toAuthResponse(rawUser);
-    const token = this.jwtService.sign({ id: user.id, email: user.email });
+    const token = this.jwtService.sign({ id: user.id, email: user.email || user.phone || '' });
     
     DomainEvents.emitEvent(EventTypes.USER_LOGGED_IN, { userId: user.id });
 

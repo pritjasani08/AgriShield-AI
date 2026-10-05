@@ -10,6 +10,8 @@ DROP TABLE IF EXISTS detections CASCADE;
 DROP TABLE IF EXISTS user_settings CASCADE;
 DROP TABLE IF EXISTS device_tokens CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS community_likes CASCADE;
+DROP TABLE IF EXISTS community_posts CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- ------------------------------------------
@@ -17,12 +19,12 @@ DROP TABLE IF EXISTS users CASCADE;
 -- ------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'user',
-    phone VARCHAR(20),
+    phone VARCHAR(20) NOT NULL,
     village VARCHAR(255),
     district VARCHAR(255),
     state VARCHAR(255),
@@ -41,6 +43,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
     user_id UUID NOT NULL,
     language VARCHAR(20) DEFAULT 'en',
     notification_enabled BOOLEAN DEFAULT TRUE,
+    notification_mode VARCHAR(10) DEFAULT 'all',
     voice_alert_enabled BOOLEAN DEFAULT TRUE,
     voice_language VARCHAR(20) DEFAULT 'en',
     alert_volume INTEGER DEFAULT 100,
@@ -114,4 +117,30 @@ CREATE TABLE IF NOT EXISTS alerts (
     message TEXT NOT NULL,
     severity VARCHAR(50) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------
+-- 4. Community Posts Table
+-- ------------------------------------------
+CREATE TABLE IF NOT EXISTS community_posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    content TEXT NOT NULL,
+    animal_type VARCHAR(100),
+    distance VARCHAR(50),
+    side VARCHAR(50),
+    image_url TEXT,
+    likes_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------
+-- 5. Community Likes Table
+-- ------------------------------------------
+CREATE TABLE IF NOT EXISTS community_likes (
+    post_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (post_id, user_id)
 );

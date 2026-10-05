@@ -33,11 +33,11 @@ export function useAuth() {
     mutationFn: AuthService.logout,
     onSuccess: () => {
       AuthStorage.clearToken();
-      queryClient.setQueryData(queryKeys.auth.me, null);
+      queryClient.clear();
     },
     onError: () => {
       AuthStorage.clearToken();
-      queryClient.setQueryData(queryKeys.auth.me, null);
+      queryClient.clear();
     },
   });
 

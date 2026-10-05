@@ -1,14 +1,16 @@
 import { User } from '../../core/interfaces';
 
 export interface SignupDto {
-  email: string;
+  mobile: string;
+  email?: string;
   password: string;
   firstName: string;
   lastName: string;
 }
 
 export interface LoginDto {
-  email: string;
+  email?: string;
+  mobile?: string;
   password: string;
 }
 

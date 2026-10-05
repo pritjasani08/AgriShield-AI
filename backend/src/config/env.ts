@@ -11,6 +11,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   BCRYPT_ROUNDS: z.string().default('10').transform(Number),
   DATABASE_PROVIDER: z.enum(['postgres', 'mock']).default('postgres'),
+  FASTAPI_URL: z.string().url('Invalid FASTAPI_URL').optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

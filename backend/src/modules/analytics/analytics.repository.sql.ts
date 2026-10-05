@@ -100,6 +100,26 @@ export class SqlAnalyticsRepository implements IAnalyticsRepository {
         data: dailyRes.rows.map(r => parseInt(r.count, 10))
       };
 
+      // Monthly trend (last 4 weeks)
+      const monthlyQuery = `
+        SELECT to_char(created_at, 'W') as week_num, COUNT(*) as count 
+        FROM detections 
+        WHERE created_at >= NOW() - INTERVAL '1 month' 
+        GROUP BY week_num 
+        ORDER BY week_num
+      `;
+      const monthlyRes = await client.query(monthlyQuery);
+      let monthly: RawChartData = {
+        labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+        data: [0, 0, 0, 0]
+      };
+      
+      if (monthlyRes.rows.length > 0) {
+        const labels = monthlyRes.rows.map(r => `Week ${r.week_num}`);
+        const data = monthlyRes.rows.map(r => parseInt(r.count, 10));
+        monthly = { labels, data };
+      }
+
       return {
         totalDetections,
         unresolvedAlerts,
@@ -110,7 +130,7 @@ export class SqlAnalyticsRepository implements IAnalyticsRepository {
         trends: {
           daily: daily.labels.length > 0 ? daily : { labels: ["00:00"], data: [0] },
           weekly: weekly.labels.length > 0 ? weekly : { labels: ["Mon"], data: [0] },
-          monthly: { labels: ["Week 1", "Week 2", "Week 3", "Week 4"], data: [0, 0, 0, totalDetections] }
+          monthly
         }
       };
     } finally {

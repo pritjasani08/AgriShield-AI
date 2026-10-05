@@ -11,3 +11,6 @@ tqdm
 scikit-learn
 Pillow
 colorama
+fastapi
+uvicorn
+python-multipart

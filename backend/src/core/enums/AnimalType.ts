@@ -3,5 +3,8 @@ export enum AnimalType {
   ELEPHANT = 'ELEPHANT',
   DEER = 'DEER',
   MONKEY = 'MONKEY',
+  BUFFALO = 'BUFFALO',
+  COW = 'COW',
+  NILGAI = 'NILGAI',
   UNKNOWN = 'UNKNOWN',
 }

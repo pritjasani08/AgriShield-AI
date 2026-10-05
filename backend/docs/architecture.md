@@ -8,6 +8,10 @@ The backend uses a strict Layered Architecture inside feature-based modules:
 - `src/modules/profile`: User profile management
 - `src/modules/settings`: Application preferences
 - `src/modules/notification`: Notification logic and device tracking
+- `src/modules/auth`: Mobile-first JWT authentication
+
+### Authentication Lifecycle
+The auth flow is strictly mobile-first. Registration requires a 10-digit `mobile` number and emits a `USER_REGISTERED` event which downstream triggers automatic Profile, Settings, and Welcome Notification initializations without tying that logic back into the Auth Controller. `email` is purely optional. The frontend manages session persistence via `AuthStorage` and React Query to `/auth/me`.
 
 ### Notification Dispatch Flow
 Notifications are deeply decoupled.
@@ -43,7 +47,25 @@ Every module strictly follows:
 3. **Repository**: Handles SQL query construction and interacts directly with PostgreSQL. Exposes only business-oriented methods (`findUserByEmail()`).
 
 ## AI Integration
-AI is abstracted via `AiProvider`. Both `DummyAiProvider` and `FastApiProvider` return the exact same `DetectionResult` contract. Controllers/Services must never know which implementation is active.
+AI is abstracted via `IDetectionProvider`. Both `DummyDetectionProvider` and `FastApiDetectionProvider` return the exact same `RawDetectionResult` contract. Controllers/Services must never know which implementation is active.
+
+### FastAPI Contract
+The Node.js backend expects the external FastAPI inference server to strictly return the following JSON schema:
+```json
+{
+  "detected": true, 
+  "animal": "wild boar",
+  "confidence": 92.5,
+  "bbox": {
+    "x": 100,
+    "y": 50,
+    "width": 200,
+    "height": 150
+  }
+}
+```
+If no detection occurs, it may return `{"detected": false}`.
+The backend maps these fields into domain models, scales confidence to `0-1`, resolves enums via an `animalMap`, and guarantees bounded coordinates.
 
 ## Domain Events
 A centralized `DomainEvents` emitter handles decoupling cross-module workflows (e.g. `DETECTION_CREATED` triggers `ALERT_TRIGGERED`).

@@ -3,6 +3,7 @@ import { NotificationService } from './notification.service';
 import { NotificationDispatcher } from '../../core/notification/NotificationDispatcher';
 import { NotificationType, NotificationPriority, NotificationCategory } from '../../core/enums';
 import { logger } from '../../core/utils/logger';
+import { COMMUNITY_EVENTS } from '../community/community.events';
 
 export function initializeNotificationEvents(
   notificationService: NotificationService, 
@@ -52,6 +53,27 @@ export function initializeNotificationEvents(
       });
     } catch (err) {
       logger.error('Failed to create DETECTION_CREATED notification', err);
+    }
+  });
+
+  DomainEvents.on(COMMUNITY_EVENTS.POST_CREATED, async (payload: { postId: string, userId: string, userName: string, content: string, animalType?: string }) => {
+    try {
+      // In a real app, you might notify all users in the same region, or just broadcast
+      // For the hackathon, we can broadcast this to all users, or simulate it by creating a single notification
+      // Wait, we don't have a way to broadcast to ALL without fetching all users. Let's just log it or simulate
+      logger.info(`Notification service processing new community post: ${payload.postId}`);
+      // If we had a mechanism to broadcast, we would do it here. 
+    } catch (err) {
+      logger.error('Failed to process POST_CREATED notification', err);
+    }
+  });
+
+  DomainEvents.on(COMMUNITY_EVENTS.POST_LIKED, async (payload: { postId: string, userId: string }) => {
+    try {
+      // Find the post author and notify them
+      logger.info(`Notification service processing like for post: ${payload.postId}`);
+    } catch (err) {
+      logger.error('Failed to process POST_LIKED notification', err);
     }
   });
 

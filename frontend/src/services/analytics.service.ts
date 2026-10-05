@@ -1,51 +1,9 @@
 import { ApiClient } from "../lib/api";
 
 import { AnalyticsSummaryDto } from "../../../backend/src/modules/analytics/analytics.types";
-import {
-  ANIMALS,
-  DAILY_TREND,
-  WEEKLY_ACTIVITY,
-  MONTHLY_ACTIVITY,
-  PEAK_HOURS,
-} from "../lib/agrishield-data";
-
-const CONFIDENCE_BANDS = [
-  { band: "90-100%", count: 120 },
-  { band: "75-89%", count: 45 },
-  { band: "50-74%", count: 12 },
-  { band: "<50%", count: 3 },
-];
 
 export class AnalyticsService {
-  static get useMocks() {
-    return import.meta.env.VITE_USE_MOCKS === "true";
-  }
-
   static async getSummary() {
-    if (this.useMocks) {
-      return new Promise<any>((resolve) => {
-        setTimeout(
-          () =>
-            resolve({
-              stats: {
-                totalDetections: 0,
-                criticalAlerts: 0,
-                averageConfidence: 98,
-                deterredCount: 0,
-              },
-              dailyTrend: DAILY_TREND,
-              weeklyActivity: WEEKLY_ACTIVITY,
-              monthlyActivity: MONTHLY_ACTIVITY,
-              distribution: ANIMALS,
-              peakHours: PEAK_HOURS,
-              confidenceBands: CONFIDENCE_BANDS,
-              heatMapData: [],
-            }),
-          800,
-        );
-      });
-    }
-
     const data = await ApiClient.get<AnalyticsSummaryDto>("/analytics/summary");
     return AnalyticsService.mapAnalyticsResponse(data);
   }
@@ -84,6 +42,10 @@ export class AnalyticsService {
 
     return {
       ...data,
+      stats: {
+        totalDetections: data.totalDetections,
+        averageConfidence: Math.round(data.securityScore.score),
+      },
       dailyTrend,
       weeklyActivity,
       monthlyActivity,

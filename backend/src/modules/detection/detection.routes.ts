@@ -5,14 +5,21 @@ import { requireAuth } from '../../core/middleware/requireAuth';
 import { validateRequest } from '../../core/middleware/validateRequest';
 import { analyzeSchema } from './detection.validator';
 
-const upload = multer({ storage: multer.memoryStorage() });
-
 export const createDetectionRoutes = (detectionController: DetectionController): Router => {
   const router = Router();
 
+  // Configure multer for memory storage (max 10MB)
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+  });
+
+  router.use(requireAuth);
+
+  router.get('/history', detectionController.getHistory);
+
   router.post(
     '/analyze',
-    requireAuth,
     upload.single('image'),
     validateRequest(analyzeSchema),
     detectionController.analyze
