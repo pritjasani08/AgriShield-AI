@@ -37,12 +37,6 @@ function AuthPage() {
     remember: true
   });
 
-  const [formData, setFormData] = useState({
-    mobile: "98250 41122",
-    password: "demo",
-    remember: true,
-  });
-
   const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
 
@@ -60,27 +54,6 @@ function AuthPage() {
     setFormData({ ...formData, mobile: val });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const rawDigits = formData.mobile.replace(/\D/g, "");
-    if (rawDigits.length !== 10) {
-      toast.error("Invalid Mobile Number", { description: "Please enter exactly 10 digits." });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await login({ email: "demo@agrishield.in", password: "demo1234" });
-      toast.success("Welcome back", { description: "Monitoring console unlocked." });
-      navigate({ to: "/dashboard" });
-    } catch (err: any) {
-      toast.error("Login Failed", { description: err.message || "Invalid credentials" });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (ready && isAuthed) {

@@ -121,32 +121,29 @@ function DetectionPage() {
     setTimelineStep(0);
     setRunning(true);
 
-    const { DetectionService } = await import("../services/detection.service");
-
-    // Start API request and animation simultaneously
-    const analyzePromise = DetectionService.analyze(file).catch((err) => {
-      console.error(err);
-      return null;
-    });
-
+    const formData = new FormData();
+    formData.append(kind === "video" ? "video" : "image", file);
+    
+    // Animate timeline while waiting
     let currentStep = 0;
-    const timer = window.setInterval(async () => {
+    const timer = window.setInterval(() => {
       currentStep++;
-      if (currentStep < TIMELINE_STEPS.length) {
+      if (currentStep < 4) {
         setTimelineStep(currentStep);
-      } else {
-        formData.append('image', file);
       }
-      
-      setTimelineStep(1); // Preprocess
-      
-      const endpoint = kind === "video" ? `http://${window.location.hostname}:8000/predict_video` : `http://${window.location.hostname}:8000/predict`;
+    }, 800);
+
+    try {
+      const endpoint = kind === "video" 
+        ? `http://${window.location.hostname}:8000/predict_video` 
+        : `http://${window.location.hostname}:8000/predict`;
       
       const res = await fetch(endpoint, {
         method: 'POST',
         body: formData
       });
       
+      window.clearInterval(timer);
       setTimelineStep(3); // Threat Calc
       
       if (!res.ok) {
@@ -175,9 +172,10 @@ function DetectionPage() {
       });
       
       // SAVE TO DATABASE
+      const { ApiClient } = await import("../lib/api");
       ApiClient.post('/detection/save', {
         animal: data.animal,
-        confidence: data.confidence / 100, // Database expects decimal if we display * 100
+        confidence: data.confidence / 100, // Database expects decimal
         media_url: kind === "video" ? data.video_url : data.image_base64,
         media_type: kind,
         threat_level: "High",
@@ -198,7 +196,11 @@ function DetectionPage() {
           threatLevel: "High"
         }).catch(e => console.warn("Could not trigger hardware alert:", e));
       }
-    }, 800);
+    } catch (err: any) {
+      window.clearInterval(timer);
+      setRunning(false);
+      toast.error("Analysis Failed", { description: err.message || "Could not connect to AI server" });
+    }
   };
 
   const handleAction = (id: string) => {

@@ -9,10 +9,12 @@ import {
 } from "./agrishield-data";
 
 let envApiUrl = import.meta.env['VITE_API_URL'];
-if (envApiUrl && envApiUrl.includes('localhost') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+const isBrowser = typeof window !== 'undefined';
+
+if (isBrowser && envApiUrl && envApiUrl.includes('localhost') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
   envApiUrl = undefined; // Force dynamic fallback on mobile
 }
-const BASE_URL = envApiUrl || `http://${window.location.hostname}:5000/api`;
+const BASE_URL = envApiUrl || (isBrowser ? `http://${window.location.hostname}:5000/api` : 'http://localhost:5000/api');
 
 export class ApiClient {
   static async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

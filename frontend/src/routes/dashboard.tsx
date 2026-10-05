@@ -189,7 +189,8 @@ function Dashboard() {
         </section>
 
         <div className="grid gap-8 xl:grid-cols-[1.5fr_1fr] items-stretch">
-          {/* ROW 1 */}
+          {/* LEFT COLUMN */}
+          <div className="space-y-8">
           {/* Perimeter Vision */}
           <PanelSection
             title="Perimeter Vision"
@@ -218,7 +219,8 @@ function Dashboard() {
                   </div>
                 </div>
               </div>
-            </PanelSection>
+            </div>
+          </PanelSection>
 
           <PanelSection
             title="Detection overview"
